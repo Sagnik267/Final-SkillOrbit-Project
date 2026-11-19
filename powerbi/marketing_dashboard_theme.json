@@ -1,0 +1,71 @@
+{
+  "name": "MarketingPerformanceTheme",
+  "dataColors": [
+    "#4B2BD6",
+    "#10B981",
+    "#F59E0B",
+    "#0EA5E9",
+    "#EF4444",
+    "#8B5CF6",
+    "#6366F1",
+    "#EC4899"
+  ],
+  "background": "#FFFFFF",
+  "foreground": "#0F172A",
+  "tableAccent": "#4B2BD6",
+  "visualStyles": {
+    "*": {
+      "*": {
+        "fontFamily": [
+          {
+            "fontFamily": "Segoe UI"
+          }
+        ],
+        "title": [
+          {
+            "fontSize": 12,
+            "fontColor": {
+              "solid": {
+                "color": "#0F172A"
+              }
+            }
+          }
+        ],
+        "labels": [
+          {
+            "fontSize": 10,
+            "fontColor": {
+              "solid": {
+                "color": "#475569"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "card": {
+      "*": {
+        "labels": [
+          {
+            "fontSize": 24,
+            "fontColor": {
+              "solid": {
+                "color": "#0F172A"
+              }
+            }
+          }
+        ],
+        "categoryLabels": [
+          {
+            "fontSize": 10,
+            "fontColor": {
+              "solid": {
+                "color": "#475569"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

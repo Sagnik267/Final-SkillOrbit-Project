@@ -1,0 +1,203 @@
+{
+  "name": "Marketing_Performance_Dashboard",
+  "compatibilityLevel": 1550,
+  "model": {
+    "culture": "en-US",
+    "dataAccessOptions": {
+      "legacyRedirects": true,
+      "returnErrorValuesAsNull": true
+    },
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "sourceQueryCulture": "en-US",
+    "tables": [
+      {
+        "name": "clean_marketing_data",
+        "columns": [
+          {
+            "name": "date",
+            "dataType": "dateTime",
+            "formatString": "yyyy-mm-dd",
+            "sourceColumn": "date"
+          },
+          {
+            "name": "campaign",
+            "dataType": "string",
+            "sourceColumn": "campaign"
+          },
+          {
+            "name": "channel",
+            "dataType": "string",
+            "sourceColumn": "channel"
+          },
+          {
+            "name": "impressions",
+            "dataType": "int64",
+            "formatString": "#,##0",
+            "sourceColumn": "impressions"
+          },
+          {
+            "name": "reach",
+            "dataType": "int64",
+            "formatString": "#,##0",
+            "sourceColumn": "reach"
+          },
+          {
+            "name": "clicks",
+            "dataType": "int64",
+            "formatString": "#,##0",
+            "sourceColumn": "clicks"
+          },
+          {
+            "name": "conversions",
+            "dataType": "int64",
+            "formatString": "#,##0",
+            "sourceColumn": "conversions"
+          },
+          {
+            "name": "spend",
+            "dataType": "double",
+            "formatString": "\u20b9#,##0.00",
+            "sourceColumn": "spend"
+          },
+          {
+            "name": "revenue",
+            "dataType": "double",
+            "formatString": "\u20b9#,##0.00",
+            "sourceColumn": "revenue"
+          },
+          {
+            "name": "likes",
+            "dataType": "int64",
+            "formatString": "#,##0",
+            "sourceColumn": "likes"
+          },
+          {
+            "name": "shares",
+            "dataType": "int64",
+            "formatString": "#,##0",
+            "sourceColumn": "shares"
+          },
+          {
+            "name": "comments",
+            "dataType": "int64",
+            "formatString": "#,##0",
+            "sourceColumn": "comments"
+          },
+          {
+            "name": "website_sessions",
+            "dataType": "int64",
+            "formatString": "#,##0",
+            "sourceColumn": "website_sessions"
+          },
+          {
+            "name": "bounce_rate",
+            "dataType": "double",
+            "formatString": "0.00%",
+            "sourceColumn": "bounce_rate"
+          },
+          {
+            "name": "new_customers",
+            "dataType": "int64",
+            "formatString": "#,##0",
+            "sourceColumn": "new_customers"
+          },
+          {
+            "name": "month",
+            "dataType": "dateTime",
+            "formatString": "yyyy-mm",
+            "sourceColumn": "month"
+          },
+          {
+            "name": "weekday",
+            "dataType": "string",
+            "sourceColumn": "weekday"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "clean_marketing_data-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = Csv.Document(File.Contents(\"D:/Project/marketing_dashboard_project/marketing_dashboard/data/clean_marketing_data.csv\").[Delimiter=\",\", Columns=17, Encoding=65001, QuoteStyle=QuoteStyle.None]),",
+                "    #\"Promoted Headers\" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),",
+                "    #\"Changed Type\" = Table.TransformColumnTypes(#\"Promoted Headers\",{{\"date\", type date}, {\"campaign\", type text}, {\"channel\", type text}, {\"impressions\", Int64.Type}, {\"reach\", Int64.Type}, {\"clicks\", Int64.Type}, {\"conversions\", Int64.Type}, {\"spend\", type number}, {\"revenue\", type number}, {\"likes\", Int64.Type}, {\"shares\", Int64.Type}, {\"comments\", Int64.Type}, {\"website_sessions\", Int64.Type}, {\"bounce_rate\", type number}, {\"new_customers\", Int64.Type}, {\"month\", type date}, {\"weekday\", type text}})",
+                "in",
+                "    #\"Changed Type\""
+              ]
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Total Revenue",
+            "expression": "SUM('clean_marketing_data'[revenue])",
+            "formatString": "\u20b9#,##0"
+          },
+          {
+            "name": "Total Ad Spend",
+            "expression": "SUM('clean_marketing_data'[spend])",
+            "formatString": "\u20b9#,##0"
+          },
+          {
+            "name": "Total Clicks",
+            "expression": "SUM('clean_marketing_data'[clicks])",
+            "formatString": "#,##0"
+          },
+          {
+            "name": "Total Impressions",
+            "expression": "SUM('clean_marketing_data'[impressions])",
+            "formatString": "#,##0"
+          },
+          {
+            "name": "Total Conversions",
+            "expression": "SUM('clean_marketing_data'[conversions])",
+            "formatString": "#,##0"
+          },
+          {
+            "name": "Net Profit",
+            "expression": "[Total Revenue] - [Total Ad Spend]",
+            "formatString": "\u20b9#,##0"
+          },
+          {
+            "name": "Average CTR",
+            "expression": "DIVIDE([Total Clicks], [Total Impressions], 0)",
+            "formatString": "0.00%"
+          },
+          {
+            "name": "Conversion Rate",
+            "expression": "DIVIDE([Total Conversions], [Total Clicks], 0)",
+            "formatString": "0.00%"
+          },
+          {
+            "name": "Cost Per Acquisition (CPA)",
+            "expression": "DIVIDE([Total Ad Spend], [Total Conversions], 0)",
+            "formatString": "\u20b9#,##0.00"
+          },
+          {
+            "name": "Cost Per Click (CPC)",
+            "expression": "DIVIDE([Total Ad Spend], [Total Clicks], 0)",
+            "formatString": "\u20b9#,##0.00"
+          },
+          {
+            "name": "ROAS",
+            "expression": "DIVIDE([Total Revenue], [Total Ad Spend], 0)",
+            "formatString": "0.00"
+          },
+          {
+            "name": "ROI %",
+            "expression": "DIVIDE([Total Revenue] - [Total Ad Spend], [Total Ad Spend], 0)",
+            "formatString": "0.0%"
+          },
+          {
+            "name": "Engagement Rate",
+            "expression": "DIVIDE(SUM('clean_marketing_data'[likes]) + SUM('clean_marketing_data'[shares]) + SUM('clean_marketing_data'[comments]), [Total Impressions], 0)",
+            "formatString": "0.00%"
+          }
+        ]
+      }
+    ]
+  }
+}

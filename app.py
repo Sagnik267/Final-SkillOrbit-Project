@@ -1,5 +1,6 @@
 """STEP 7 - Streamlit dashboard (Power BI Executive Layout + ₹ KPIs + Light/Dark Mode).  Run:  streamlit run app.py"""
 import datetime as dt
+import io
 import sqlite3
 from pathlib import Path
 
@@ -404,16 +405,29 @@ st.markdown(f"""
 
 
 def _style_fig(fig: go.Figure, title: str = "", height: int = 340) -> go.Figure:
+    has_title = bool(title)
     fig.update_layout(
         template=PAL["plotly_template"],
-        title=dict(text=title, font=dict(size=15, color=PAL["text"])),
+        title=dict(
+            text=title,
+            font=dict(size=14, color=PAL["text"]),
+            x=0,
+            xanchor="left",
+            y=0.98,
+            yanchor="top",
+        ) if has_title else dict(text=""),
         font=dict(color=PAL["text"]),
         height=height,
-        margin=dict(l=16, r=24, t=44 if title else 20, b=16),
+        margin=dict(l=16, r=24, t=76 if has_title else 54, b=16),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         legend=dict(
-            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
+            orientation="h",
+            yanchor="bottom",
+            y=1.08,
+            xanchor="right",
+            x=1,
+            title=dict(text=""),
             font=dict(color=PAL["text"]),
         ),
         hoverlabel=dict(
@@ -787,6 +801,14 @@ with tab_ins:
     for line in generate_insights(df):
         st.markdown(f"- {line}")
 
+@st.cache_data
+def _to_excel(data_df: pd.DataFrame) -> bytes:
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+        data_df.to_excel(writer, index=False, sheet_name="Filtered Marketing Data")
+    return buffer.getvalue()
+
+
 # ------------------------------------------------------------------ Reports
 with tab_rep:
     st.subheader("📄 Generate reports for the current filters")
@@ -795,6 +817,19 @@ with tab_rep:
                                                "monthly": "Monthly Analytics Report"}[x])
     html = build_html_report(df, kind)
     st.download_button("⬇️ Download report (HTML)", html, file_name=f"{kind}_report.html", mime="text/html")
-    st.download_button("⬇️ Download filtered data (CSV)", df.to_csv(index=False),
-                       file_name="filtered_marketing_data.csv", mime="text/csv")
+    col_dl1, col_dl2 = st.columns(2)
+    with col_dl1:
+        st.download_button(
+            "⬇️ Download filtered data (Excel)",
+            _to_excel(df),
+            file_name="filtered_marketing_data.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    with col_dl2:
+        st.download_button(
+            "⬇️ Download filtered data (CSV)",
+            df.to_csv(index=False),
+            file_name="filtered_marketing_data.csv",
+            mime="text/csv",
+        )
     st.caption("Open the downloaded HTML file in any browser, or print it to PDF (Ctrl+P).")
