@@ -174,3 +174,4 @@ To replicate the exact executive layout in Power BI Desktop:
 1. In Power BI Desktop, click **File > Export > Export to PDF**.
 2. Save the PDF report alongside your capstone documentation.
 3. Commit and push the `powerbi/` folder to GitHub.
+

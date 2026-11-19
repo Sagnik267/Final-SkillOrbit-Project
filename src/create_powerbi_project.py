@@ -61,9 +61,17 @@ MODEL_BIM = {
             {
                 "name": "clean_marketing_data",
                 "columns": [
+                    {"name": "record_id", "dataType": "string", "sourceColumn": "record_id"},
                     {"name": "date", "dataType": "dateTime", "formatString": "yyyy-mm-dd", "sourceColumn": "date"},
+                    {"name": "campaign_id", "dataType": "string", "sourceColumn": "campaign_id"},
                     {"name": "campaign", "dataType": "string", "sourceColumn": "campaign"},
                     {"name": "channel", "dataType": "string", "sourceColumn": "channel"},
+                    {"name": "customer_id", "dataType": "string", "sourceColumn": "customer_id"},
+                    {"name": "campaign_type", "dataType": "string", "sourceColumn": "campaign_type"},
+                    {"name": "target_audience", "dataType": "string", "sourceColumn": "target_audience"},
+                    {"name": "location", "dataType": "string", "sourceColumn": "location"},
+                    {"name": "device_type", "dataType": "string", "sourceColumn": "device_type"},
+                    {"name": "purchase_status", "dataType": "string", "sourceColumn": "purchase_status"},
                     {"name": "impressions", "dataType": "int64", "formatString": "#,##0", "sourceColumn": "impressions"},
                     {"name": "reach", "dataType": "int64", "formatString": "#,##0", "sourceColumn": "reach"},
                     {"name": "clicks", "dataType": "int64", "formatString": "#,##0", "sourceColumn": "clicks"},
@@ -73,6 +81,7 @@ MODEL_BIM = {
                     {"name": "likes", "dataType": "int64", "formatString": "#,##0", "sourceColumn": "likes"},
                     {"name": "shares", "dataType": "int64", "formatString": "#,##0", "sourceColumn": "shares"},
                     {"name": "comments", "dataType": "int64", "formatString": "#,##0", "sourceColumn": "comments"},
+                    {"name": "engagement_score", "dataType": "int64", "formatString": "#,##0", "sourceColumn": "engagement_score"},
                     {"name": "website_sessions", "dataType": "int64", "formatString": "#,##0", "sourceColumn": "website_sessions"},
                     {"name": "bounce_rate", "dataType": "double", "formatString": "0.00%", "sourceColumn": "bounce_rate"},
                     {"name": "new_customers", "dataType": "int64", "formatString": "#,##0", "sourceColumn": "new_customers"},
@@ -87,9 +96,9 @@ MODEL_BIM = {
                             "type": "m",
                             "expression": [
                                 'let',
-                                f'    Source = Csv.Document(File.Contents("{str(CSV_PATH).replace(chr(92), "/")}").[Delimiter=",", Columns=17, Encoding=65001, QuoteStyle=QuoteStyle.None]),',
+                                f'    Source = Csv.Document(File.Contents("{str(CSV_PATH).replace(chr(92), "/")}").[Delimiter=",", Columns=27, Encoding=65001, QuoteStyle=QuoteStyle.None]),',
                                 '    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),',
-                                '    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"date", type date}, {"campaign", type text}, {"channel", type text}, {"impressions", Int64.Type}, {"reach", Int64.Type}, {"clicks", Int64.Type}, {"conversions", Int64.Type}, {"spend", type number}, {"revenue", type number}, {"likes", Int64.Type}, {"shares", Int64.Type}, {"comments", Int64.Type}, {"website_sessions", Int64.Type}, {"bounce_rate", type number}, {"new_customers", Int64.Type}, {"month", type date}, {"weekday", type text}})',
+                                '    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"record_id", type text}, {"date", type date}, {"campaign_id", type text}, {"campaign", type text}, {"channel", type text}, {"customer_id", type text}, {"campaign_type", type text}, {"target_audience", type text}, {"location", type text}, {"device_type", type text}, {"purchase_status", type text}, {"impressions", Int64.Type}, {"reach", Int64.Type}, {"clicks", Int64.Type}, {"conversions", Int64.Type}, {"spend", type number}, {"revenue", type number}, {"likes", Int64.Type}, {"shares", Int64.Type}, {"comments", Int64.Type}, {"engagement_score", Int64.Type}, {"website_sessions", Int64.Type}, {"bounce_rate", type number}, {"new_customers", Int64.Type}, {"month", type date}, {"weekday", type text}})',
                                 'in',
                                 '    #"Changed Type"'
                             ]

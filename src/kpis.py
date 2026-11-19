@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 SUM_COLS = ["impressions", "reach", "clicks", "conversions", "spend", "revenue",
-            "likes", "shares", "comments", "website_sessions", "new_customers"]
+            "likes", "shares", "comments", "engagement_score", "website_sessions", "new_customers"]
 
 
 def _div(a, b):

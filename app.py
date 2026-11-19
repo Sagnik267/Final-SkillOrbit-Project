@@ -17,12 +17,14 @@ ROOT = Path(__file__).resolve().parent
 st.set_page_config(page_title="Marketing Performance Dashboard", page_icon="📊", layout="wide")
 
 CHANNEL_COLORS = {
-    "Google Ads": "#4b2bd6",
-    "Email":      "#10b981",
-    "Instagram":  "#f59e0b",
-    "LinkedIn":   "#0ea5e9",
-    "YouTube":    "#ef4444",
-    "Facebook":   "#8b5cf6",
+    "Google Ads":   "#4b2bd6",
+    "Email":        "#10b981",
+    "Instagram":    "#f59e0b",
+    "LinkedIn":     "#0ea5e9",
+    "YouTube":      "#ef4444",
+    "Facebook":     "#8b5cf6",
+    "Website":      "#06b6d4",
+    "Social Media": "#ec4899",
 }
 
 THEMES = {
@@ -84,6 +86,8 @@ def load_data() -> pd.DataFrame:
             df = pd.read_sql("SELECT * FROM marketing", conn, parse_dates=["date", "month"])
     else:
         df = pd.read_csv(csv, parse_dates=["date", "month"])
+    df["date"] = pd.to_datetime(df["date"])
+    df["month"] = pd.to_datetime(df["month"])
     return df
 
 
@@ -452,23 +456,23 @@ if "date_range" not in st.session_state:
     st.session_state["date_range"] = (min_d, max_d)
 
 PERIODS = {
-    "Full Year": (min_d, max_d),
-    "Q1": (max(min_d, dt.date(max_d.year, 1, 1)), min(max_d, dt.date(max_d.year, 3, 31))),
-    "Q2": (max(min_d, dt.date(max_d.year, 4, 1)), min(max_d, dt.date(max_d.year, 6, 30))),
-    "Q3": (max(min_d, dt.date(max_d.year, 7, 1)), min(max_d, dt.date(max_d.year, 9, 30))),
-    "Q4": (max(min_d, dt.date(max_d.year, 10, 1)), min(max_d, dt.date(max_d.year, 12, 31))),
+    "All Time": (min_d, max_d),
+    "2025": (max(min_d, dt.date(2025, 1, 1)), min(max_d, dt.date(2025, 12, 31))),
+    "2024": (max(min_d, dt.date(2024, 1, 1)), min(max_d, dt.date(2024, 12, 31))),
+    "Last 90 Days": (max(min_d, max_d - dt.timedelta(days=90)), max_d),
+    "Last 30 Days": (max(min_d, max_d - dt.timedelta(days=30)), max_d),
 }
 
 
 def _apply_period_pill():
-    choice = st.session_state.get("period_pill") or "Full Year"
+    choice = st.session_state.get("period_pill") or "All Time"
     st.session_state["date_range"] = PERIODS.get(choice, (min_d, max_d))
 
 
 st.sidebar.pills(
     "Quick period",
     list(PERIODS.keys()),
-    default="Full Year",
+    default="All Time",
     required=True,
     key="period_pill",
     on_change=_apply_period_pill,
@@ -490,24 +494,103 @@ def money(v, decimals: int = 0) -> str:
     return fmt_inr(v, decimals=decimals, compact=compact_currency)
 
 
-channels = st.sidebar.multiselect("Channels", sorted(df_all["channel"].unique()),
-                                  default=sorted(df_all["channel"].unique()))
-camp_options = sorted(df_all[df_all["channel"].isin(channels)]["campaign"].unique())
-campaigns = st.sidebar.multiselect("Campaigns", camp_options, default=camp_options)
+# --- 1. Marketing Channels Filter ---
+channels = st.sidebar.multiselect(
+    "Marketing Channel",
+    sorted(df_all["channel"].unique()),
+    default=sorted(df_all["channel"].unique()),
+    key="filter_channels",
+)
+
+# --- 2. Campaigns Filter ---
+camp_pool = df_all[df_all["channel"].isin(channels)] if channels else df_all
+camp_options = sorted(camp_pool["campaign"].unique())
+campaigns = st.sidebar.multiselect(
+    "Campaign",
+    camp_options,
+    default=camp_options,
+    key="filter_campaigns",
+)
+
+# --- 3. Campaign Type Filter ---
+camp_type_options = sorted(df_all["campaign_type"].dropna().unique()) if "campaign_type" in df_all.columns else []
+camp_types = st.sidebar.multiselect(
+    "Campaign Type",
+    camp_type_options,
+    default=camp_type_options,
+    key="filter_camp_types",
+) if camp_type_options else []
+
+# --- 4. Location Filter ---
+loc_options = sorted(df_all["location"].dropna().unique()) if "location" in df_all.columns else []
+locations = st.sidebar.multiselect(
+    "Location",
+    loc_options,
+    default=loc_options,
+    key="filter_locations",
+) if loc_options else []
+
+# --- 5. Device Type Filter ---
+dev_options = sorted(df_all["device_type"].dropna().unique()) if "device_type" in df_all.columns else []
+devices = st.sidebar.multiselect(
+    "Device Type",
+    dev_options,
+    default=dev_options,
+    key="filter_devices",
+) if dev_options else []
+
+# --- 6. Purchase Status Filter ---
+status_options = sorted(df_all["purchase_status"].dropna().unique()) if "purchase_status" in df_all.columns else []
+purchase_statuses = st.sidebar.multiselect(
+    "Purchase Status",
+    status_options,
+    default=status_options,
+    key="filter_purchase_statuses",
+) if status_options else []
 
 start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
-df = df_all[(df_all["date"].between(start, end)) & df_all["channel"].isin(channels)
-            & df_all["campaign"].isin(campaigns)]
+
+# Build mask for current filtered selection
+mask = (
+    df_all["date"].between(start, end)
+    & df_all["channel"].isin(channels)
+    & df_all["campaign"].isin(campaigns)
+)
+if camp_type_options and camp_types:
+    mask &= df_all["campaign_type"].isin(camp_types)
+if loc_options and locations:
+    mask &= df_all["location"].isin(locations)
+if dev_options and devices:
+    mask &= df_all["device_type"].isin(devices)
+if status_options and purchase_statuses:
+    mask &= df_all["purchase_status"].isin(purchase_statuses)
+
+df = df_all[mask]
 
 # previous period of same length (for the delta arrows)
 span = (end - start).days + 1
-prev = df_all[(df_all["date"].between(start - pd.Timedelta(days=span), start - pd.Timedelta(days=1)))
-              & df_all["channel"].isin(channels) & df_all["campaign"].isin(campaigns)]
+prev_mask = (
+    df_all["date"].between(start - pd.Timedelta(days=span), start - pd.Timedelta(days=1))
+    & df_all["channel"].isin(channels)
+    & df_all["campaign"].isin(campaigns)
+)
+if camp_type_options and camp_types:
+    prev_mask &= df_all["campaign_type"].isin(camp_types)
+if loc_options and locations:
+    prev_mask &= df_all["location"].isin(locations)
+if dev_options and devices:
+    prev_mask &= df_all["device_type"].isin(devices)
+if status_options and purchase_statuses:
+    prev_mask &= df_all["purchase_status"].isin(purchase_statuses)
+
+prev = df_all[prev_mask]
 
 st.title("📊 Marketing Performance Dashboard")
-st.caption(f"{len(df):,} records  |  {start:%d %b %Y} to {end:%d %b %Y}  |  {df['channel'].nunique()} channels  |  {df['campaign'].nunique()} campaigns")
+loc_label = f"  |  {df['location'].nunique()} locations" if "location" in df.columns and not df.empty else ""
+dev_label = f"  |  {df['device_type'].nunique()} devices" if "device_type" in df.columns and not df.empty else ""
+st.caption(f"{len(df):,} records  |  {start:%d %b %Y} to {end:%d %b %Y}  |  {df['channel'].nunique()} channels  |  {df['campaign'].nunique()} campaigns{loc_label}{dev_label}")
 if df.empty:
-    st.warning("No data for the selected filters.")
+    st.warning("No data for the selected filters. Please select at least one option in each filter category.")
     st.stop()
 
 t = overall(df)
@@ -745,6 +828,31 @@ with tab_ch:
         "engagement_rate": "{:.2%}",
     }))
 
+    if "device_type" in df.columns and "location" in df.columns and df["device_type"].nunique() > 1:
+        st.markdown('<div class="section-card-title" style="margin-top:24px;">Device & Location Breakdown</div>', unsafe_allow_html=True)
+        col_dev, col_loc = st.columns(2)
+        with col_dev:
+            dev_agg = summarize(df, "device_type").sort_values("revenue", ascending=False)
+            fig_dev = px.bar(
+                dev_agg, x="device_type", y="revenue", color="device_type",
+                text=dev_agg["revenue"].map(lambda v: money(v)),
+                title="Revenue by Device Type"
+            )
+            fig_dev.update_traces(textposition="outside", showlegend=False)
+            fig_dev.update_yaxes(tickprefix="₹")
+            col_dev.plotly_chart(_style_fig(fig_dev, height=340), width="stretch")
+
+        with col_loc:
+            loc_agg = summarize(df, "location").sort_values("revenue", ascending=True)
+            fig_loc = px.bar(
+                loc_agg, x="revenue", y="location", orientation="h",
+                text=loc_agg["revenue"].map(lambda v: money(v)),
+                title="Revenue by Location"
+            )
+            fig_loc.update_traces(textposition="outside", showlegend=False, marker_color=PAL["accent"])
+            fig_loc.update_xaxes(tickprefix="₹")
+            col_loc.plotly_chart(_style_fig(fig_loc, height=340), width="stretch")
+
 # ------------------------------------------------------------------ Campaigns
 with tab_camp:
     camp = summarize(df, ["campaign", "channel"]).sort_values("revenue", ascending=False)
@@ -771,6 +879,30 @@ with tab_camp:
         "cpa": lambda v: fmt_inr(v, 2),
     }), max_height=420)
 
+    if "campaign_type" in df.columns and "target_audience" in df.columns and df["campaign_type"].nunique() > 1:
+        st.markdown('<div class="section-card-title" style="margin-top:24px;">Campaign Type & Target Audience Performance</div>', unsafe_allow_html=True)
+        col_ct, col_aud = st.columns(2)
+        with col_ct:
+            ct_agg = summarize(df, "campaign_type").sort_values("revenue", ascending=True)
+            fig_ct = px.bar(
+                ct_agg, x="revenue", y="campaign_type", orientation="h",
+                text=ct_agg["revenue"].map(lambda v: money(v)),
+                title="Revenue by Campaign Type"
+            )
+            fig_ct.update_traces(textposition="outside", showlegend=False, marker_color=PAL["accent"])
+            fig_ct.update_xaxes(tickprefix="₹")
+            col_ct.plotly_chart(_style_fig(fig_ct, height=360), width="stretch")
+
+        with col_aud:
+            aud_agg = summarize(df, "target_audience").sort_values("conversions", ascending=True)
+            fig_aud = px.bar(
+                aud_agg, x="conversions", y="target_audience", orientation="h",
+                text=aud_agg["conversions"].map(lambda v: f"{v:,.0f}"),
+                title="Conversions by Target Audience"
+            )
+            fig_aud.update_traces(textposition="outside", showlegend=False, marker_color="#10b981")
+            col_aud.plotly_chart(_style_fig(fig_aud, height=360), width="stretch")
+
 # ------------------------------------------------------------------ Engagement trends
 with tab_trend:
     grain = st.radio("Group by", ["Week", "Month"], horizontal=True)
@@ -794,6 +926,24 @@ with tab_trend:
     heat = heat.reindex(columns=[x for x in order if x in heat.columns])
     st.plotly_chart(_style_fig(px.imshow(heat, text_auto=".1%", aspect="auto", color_continuous_scale="Purples",
                                          title="Conversion Rate: Channel x Weekday")), width="stretch")
+
+    if "purchase_status" in df.columns and df["purchase_status"].nunique() > 1:
+        st.markdown('<div class="section-card-title" style="margin-top:24px;">Purchase Status & Engagement Breakdown</div>', unsafe_allow_html=True)
+        c_ps, c_es = st.columns(2)
+        with c_ps:
+            status_counts = df["purchase_status"].value_counts().reset_index()
+            status_counts.columns = ["purchase_status", "count"]
+            fig_ps = px.pie(
+                status_counts, names="purchase_status", values="count", hole=0.45,
+                title="Purchase Status Distribution",
+                color_discrete_sequence=["#10b981", "#f59e0b", "#6366f1", "#ef4444", "#64748b"]
+            )
+            fig_ps.update_traces(textinfo="percent+label", textposition="inside")
+            c_ps.plotly_chart(_style_fig(fig_ps, height=340), width="stretch")
+        with c_es:
+            if "engagement_score" in tr.columns:
+                fig_es = px.area(tr, x="period", y="engagement_score", title=f"Customer Engagement Score per {grain}", color_discrete_sequence=["#a855f7"])
+                c_es.plotly_chart(_style_fig(fig_es, height=340), width="stretch")
 
 # ------------------------------------------------------------------ Insights
 with tab_ins:
